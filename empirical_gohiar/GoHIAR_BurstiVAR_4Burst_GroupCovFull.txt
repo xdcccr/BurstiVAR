@@ -1,0 +1,246 @@
+model {
+  # ===========================================================================
+  # GoHIAR_BurstiVAR_4Burst_GroupCovFull.txt
+  # 经验数据分析模型 (Go-HIAR Intervention Study, Li et al. 2026)
+  # 4-Burst BurstiVAR, baseline + delta 参数化
+  #   + Group 作为 *全部* level-2 参数的 covariate:
+  #       - burst intercepts (B2, B3, B4): delta_grp[1:6]
+  #       - dynamics (AR, CR, burst-invariant): delta_grp_AR[1:2], delta_grp_CR[1:2]
+  #
+  # 变量:
+  #   y1 = Meaning of life (MOL), 0-100 scale
+  #   y2 = Relationship,          0-100 scale
+  #
+  # Burst 结构 (4 periods × 4 blocks/day):
+  #   Burst 1 (P1): Pre-intervention,     Day  1-14, T1 = 56  ← BASELINE
+  #   Burst 2 (P2): Intervention,         Day 15-29, T2 = 116
+  #   Burst 3 (P3): Post-intervention I,  Day 30-42, T3 = 168
+  #   Burst 4 (P4): Post-intervention II, Day 43-56, T4 = 224
+  #
+  # Group coding (传入数据 G[1:P]):
+  #   G[pp] = 0  → Control     (对照组, 如 G1)
+  #   G[pp] = 1  → Intervention (干预组, 如 G3: PPI+Med)
+  #
+  # Population-level 参数化:
+  #   - Burst 1 intercept baseline:  mu_base[1:2]          (跨组共享)
+  #   - Burst 2-4 intercept shifts:
+  #       delta_main[1:6] = Control 组 phase effects
+  #       delta_grp[1:6]  = Intervention 的 *额外* phase effects (group × phase)
+  #   - AR (burst-invariant):
+  #       mu_AR_base[1:2]      = Control 组 AR 均值   (y1, y2)
+  #       delta_grp_AR[1:2]    = Intervention 的额外 AR 差异
+  #   - CR (burst-invariant):
+  #       mu_CR_base[1:2]      = Control 组 CR 均值   (CR[1]: y1→y2, CR[2]: y2→y1)
+  #       delta_grp_CR[1:2]    = Intervention 的额外 CR 差异
+  #   - Between-person 方差 tau_L2[1:12]: 跨组共享
+  #
+  # Priors:
+  #   - delta_grp (intercept): SD = 25 (0-100 scale)
+  #   - delta_grp_AR / delta_grp_CR: SD = 0.3 (信息化; AR 典型值 ~0.2)
+  # ===========================================================================
+
+  # ===========================================================================
+  # PART 1. Level-1 model (within-person VAR)
+  # ===========================================================================
+  for (pp in 1:P) {
+
+    # ==================== Burst 1: P1 Pre-intervention ========================
+    trend[pp, 1, 1:2] <- InterceptBurst1[pp, 1:2]
+    mu[pp, 1, 1:2] <- trend[pp, 1, 1:2]
+    Y[pp, 1, 1:2] ~ dmnorm(mu[pp, 1, 1:2], InnovationPrec[1:2, 1:2])
+    dev[pp, 1, 1:2] <- Y[pp, 1, 1:2] - trend[pp, 1, 1:2]
+
+    for (tt in 2:T1) {
+      trend[pp, tt, 1:2] <- InterceptBurst1[pp, 1:2]
+      mu[pp, tt, 1:2] <- trend[pp, tt, 1:2] + c(
+        AR[pp, 1] * dev[pp, tt-1, 1] + CR[pp, 2] * dev[pp, tt-1, 2],
+        AR[pp, 2] * dev[pp, tt-1, 2] + CR[pp, 1] * dev[pp, tt-1, 1])
+      Y[pp, tt, 1:2] ~ dmnorm(mu[pp, tt, 1:2], InnovationPrec[1:2, 1:2])
+      dev[pp, tt, 1:2] = Y[pp, tt, 1:2] - trend[pp, tt, 1:2]
+    }
+
+    # ==================== Burst 2: P2 Intervention ============================
+    trend[pp, T1+1, 1:2] <- InterceptBurst2[pp, 1:2]
+    mu[pp, T1+1, 1:2] <- trend[pp, T1+1, 1:2]
+    Y[pp, T1+1, 1:2] ~ dmnorm(mu[pp, T1+1, 1:2], InnovationPrec[1:2, 1:2])
+    dev[pp, T1+1, 1:2] <- Y[pp, T1+1, 1:2] - trend[pp, T1+1, 1:2]
+
+    for (tt in (T1+2):T2) {
+      trend[pp, tt, 1:2] <- InterceptBurst2[pp, 1:2]
+      mu[pp, tt, 1:2] <- trend[pp, tt, 1:2] + c(
+        AR[pp, 1] * dev[pp, tt-1, 1] + CR[pp, 2] * dev[pp, tt-1, 2],
+        AR[pp, 2] * dev[pp, tt-1, 2] + CR[pp, 1] * dev[pp, tt-1, 1])
+      Y[pp, tt, 1:2] ~ dmnorm(mu[pp, tt, 1:2], InnovationPrec[1:2, 1:2])
+      dev[pp, tt, 1:2] = Y[pp, tt, 1:2] - trend[pp, tt, 1:2]
+    }
+
+    # ==================== Burst 3: P3 Post-intervention I =====================
+    trend[pp, T2+1, 1:2] <- InterceptBurst3[pp, 1:2]
+    mu[pp, T2+1, 1:2] <- trend[pp, T2+1, 1:2]
+    Y[pp, T2+1, 1:2] ~ dmnorm(mu[pp, T2+1, 1:2], InnovationPrec[1:2, 1:2])
+    dev[pp, T2+1, 1:2] <- Y[pp, T2+1, 1:2] - trend[pp, T2+1, 1:2]
+
+    for (tt in (T2+2):T3) {
+      trend[pp, tt, 1:2] <- InterceptBurst3[pp, 1:2]
+      mu[pp, tt, 1:2] <- trend[pp, tt, 1:2] + c(
+        AR[pp, 1] * dev[pp, tt-1, 1] + CR[pp, 2] * dev[pp, tt-1, 2],
+        AR[pp, 2] * dev[pp, tt-1, 2] + CR[pp, 1] * dev[pp, tt-1, 1])
+      Y[pp, tt, 1:2] ~ dmnorm(mu[pp, tt, 1:2], InnovationPrec[1:2, 1:2])
+      dev[pp, tt, 1:2] = Y[pp, tt, 1:2] - trend[pp, tt, 1:2]
+    }
+
+    # ==================== Burst 4: P4 Post-intervention II ====================
+    trend[pp, T3+1, 1:2] <- InterceptBurst4[pp, 1:2]
+    mu[pp, T3+1, 1:2] <- trend[pp, T3+1, 1:2]
+    Y[pp, T3+1, 1:2] ~ dmnorm(mu[pp, T3+1, 1:2], InnovationPrec[1:2, 1:2])
+    dev[pp, T3+1, 1:2] <- Y[pp, T3+1, 1:2] - trend[pp, T3+1, 1:2]
+
+    for (tt in (T3+2):T4) {
+      trend[pp, tt, 1:2] <- InterceptBurst4[pp, 1:2]
+      mu[pp, tt, 1:2] <- trend[pp, tt, 1:2] + c(
+        AR[pp, 1] * dev[pp, tt-1, 1] + CR[pp, 2] * dev[pp, tt-1, 2],
+        AR[pp, 2] * dev[pp, tt-1, 2] + CR[pp, 1] * dev[pp, tt-1, 1])
+      Y[pp, tt, 1:2] ~ dmnorm(mu[pp, tt, 1:2], InnovationPrec[1:2, 1:2])
+      dev[pp, tt, 1:2] = Y[pp, tt, 1:2] - trend[pp, tt, 1:2]
+    }
+
+    # =========================================================================
+    # PART 2. Level-2 model (person-specific random effects)
+    # =========================================================================
+    # Burst intercepts (k = 1:8):
+    #   B1 (k=1:2): mu_base[.]                              (跨组共享)
+    #   B2 (k=3:4): mu_base + delta_main + delta_grp*G[pp]
+    #   B3 (k=5:6): mu_base + delta_main + delta_grp*G[pp]
+    #   B4 (k=7:8): mu_base + delta_main + delta_grp*G[pp]
+    # Dynamics (k = 9:12):
+    #   AR[1] (k= 9): mu_AR_base[1] + delta_grp_AR[1]*G[pp]
+    #   AR[2] (k=10): mu_AR_base[2] + delta_grp_AR[2]*G[pp]
+    #   CR[1] (k=11): mu_CR_base[1] + delta_grp_CR[1]*G[pp]
+    #   CR[2] (k=12): mu_CR_base[2] + delta_grp_CR[2]*G[pp]
+    # =========================================================================
+
+    # --- Burst 1 intercepts (baseline, 跨组共享) ---
+    person_params[pp, 1] ~ dnorm(mu_base[1], tau_L2[1])
+    person_params[pp, 2] ~ dnorm(mu_base[2], tau_L2[2])
+
+    # --- Burst 2 intercepts ---
+    person_params[pp, 3] ~ dnorm(
+      mu_base[1] + delta_main[1] + delta_grp[1] * G[pp], tau_L2[3])
+    person_params[pp, 4] ~ dnorm(
+      mu_base[2] + delta_main[2] + delta_grp[2] * G[pp], tau_L2[4])
+
+    # --- Burst 3 intercepts ---
+    person_params[pp, 5] ~ dnorm(
+      mu_base[1] + delta_main[3] + delta_grp[3] * G[pp], tau_L2[5])
+    person_params[pp, 6] ~ dnorm(
+      mu_base[2] + delta_main[4] + delta_grp[4] * G[pp], tau_L2[6])
+
+    # --- Burst 4 intercepts ---
+    person_params[pp, 7] ~ dnorm(
+      mu_base[1] + delta_main[5] + delta_grp[5] * G[pp], tau_L2[7])
+    person_params[pp, 8] ~ dnorm(
+      mu_base[2] + delta_main[6] + delta_grp[6] * G[pp], tau_L2[8])
+
+    # --- AR (k = 9, 10): baseline + group shift ---
+    person_params[pp,  9] ~ dnorm(
+      mu_AR_base[1] + delta_grp_AR[1] * G[pp], tau_L2[ 9])
+    person_params[pp, 10] ~ dnorm(
+      mu_AR_base[2] + delta_grp_AR[2] * G[pp], tau_L2[10])
+
+    # --- CR (k = 11, 12): baseline + group shift ---
+    person_params[pp, 11] ~ dnorm(
+      mu_CR_base[1] + delta_grp_CR[1] * G[pp], tau_L2[11])
+    person_params[pp, 12] ~ dnorm(
+      mu_CR_base[2] + delta_grp_CR[2] * G[pp], tau_L2[12])
+
+    # --- 从 person_params 提取 ---
+    InterceptBurst1[pp, 1:2] <- person_params[pp, 1:2]
+    InterceptBurst2[pp, 1:2] <- person_params[pp, 3:4]
+    InterceptBurst3[pp, 1:2] <- person_params[pp, 5:6]
+    InterceptBurst4[pp, 1:2] <- person_params[pp, 7:8]
+
+    AR[pp, 1] <- person_params[pp,  9]    # AR y1 (Meaning)
+    AR[pp, 2] <- person_params[pp, 10]    # AR y2 (Relationship)
+    CR[pp, 1] <- person_params[pp, 11]    # CR y1 -> y2
+    CR[pp, 2] <- person_params[pp, 12]    # CR y2 -> y1
+  }
+
+  # ===========================================================================
+  # PART 3. Priors
+  # ===========================================================================
+
+  # --- Baseline (Burst 1) intercept population means ---
+  mu_base[1] ~ dnorm(75, 0.0004)  # precision = 1/50^2
+  mu_base[2] ~ dnorm(75, 0.0004)
+
+  # --- Intercept delta_main / delta_grp (0-100 scale, SD = 25) ---
+  for (d in 1:6) {
+    delta_main[d] ~ dnorm(0, 0.0016)   # 1/25^2
+    delta_grp[d]  ~ dnorm(0, 0.0016)
+  }
+
+  # --- AR baseline (Control 组), truncated to stationarity zone ---
+  mu_AR_base[1] ~ dnorm(0, 0.01)T(-1.5, 1.5)   # AR y1 (Meaning)
+  mu_AR_base[2] ~ dnorm(0, 0.01)T(-1.5, 1.5)   # AR y2 (Relationship)
+
+  # --- CR baseline (Control 组) ---
+  mu_CR_base[1] ~ dnorm(0, 0.01)               # CR y1 -> y2
+  mu_CR_base[2] ~ dnorm(0, 0.01)               # CR y2 -> y1
+
+  # --- Group shifts on dynamics: SD = 0.3, precision = 1/0.3^2 ≈ 11.1111 ---
+  for (k in 1:2) {
+    delta_grp_AR[k] ~ dnorm(0, 11.1111)
+    delta_grp_CR[k] ~ dnorm(0, 11.1111)
+  }
+
+  # ===========================================================================
+  # PART 4. Derived quantities (画图 + 报告用)
+  # ===========================================================================
+
+  # --- 两组的 8 个 burst-intercept 均值 ---
+  mu_ctrl[1] <- mu_base[1]
+  mu_ctrl[2] <- mu_base[2]
+  mu_ctrl[3] <- mu_base[1] + delta_main[1]
+  mu_ctrl[4] <- mu_base[2] + delta_main[2]
+  mu_ctrl[5] <- mu_base[1] + delta_main[3]
+  mu_ctrl[6] <- mu_base[2] + delta_main[4]
+  mu_ctrl[7] <- mu_base[1] + delta_main[5]
+  mu_ctrl[8] <- mu_base[2] + delta_main[6]
+
+  mu_intv[1] <- mu_base[1]
+  mu_intv[2] <- mu_base[2]
+  mu_intv[3] <- mu_base[1] + delta_main[1] + delta_grp[1]
+  mu_intv[4] <- mu_base[2] + delta_main[2] + delta_grp[2]
+  mu_intv[5] <- mu_base[1] + delta_main[3] + delta_grp[3]
+  mu_intv[6] <- mu_base[2] + delta_main[4] + delta_grp[4]
+  mu_intv[7] <- mu_base[1] + delta_main[5] + delta_grp[5]
+  mu_intv[8] <- mu_base[2] + delta_main[6] + delta_grp[6]
+
+  # --- 两组的 AR / CR 均值 (burst-invariant) ---
+  AR_ctrl[1] <- mu_AR_base[1]
+  AR_ctrl[2] <- mu_AR_base[2]
+  AR_intv[1] <- mu_AR_base[1] + delta_grp_AR[1]
+  AR_intv[2] <- mu_AR_base[2] + delta_grp_AR[2]
+
+  CR_ctrl[1] <- mu_CR_base[1]
+  CR_ctrl[2] <- mu_CR_base[2]
+  CR_intv[1] <- mu_CR_base[1] + delta_grp_CR[1]
+  CR_intv[2] <- mu_CR_base[2] + delta_grp_CR[2]
+
+  # ===========================================================================
+  # PART 5. Between-person precision & innovation covariance
+  # ===========================================================================
+
+  for (k in 1:8) {
+    tau_L2[k] ~ dgamma(1, 300)
+    Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+
+  for (k in 9:12) {
+    tau_L2[k] ~ dgamma(1, 0.01)
+    Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+
+  InnovationPrec[1:2, 1:2] ~ dwish(W0[1:2, 1:2], df_res)
+  sigma_innovation[1:2, 1:2] <- inverse(InnovationPrec[1:2, 1:2])
+}

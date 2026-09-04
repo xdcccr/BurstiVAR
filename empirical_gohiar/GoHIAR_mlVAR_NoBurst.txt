@@ -1,0 +1,70 @@
+model {
+  # ===========================================================================
+  # GoHIAR_mlVAR_NoBurst.txt   (2026-07-17)
+  #
+  # 对照模型: 无 burst 截距的标准 mlVAR。
+  # 回应 advisor todo: "What if the burst-related changes were not accounted for?
+  #                     How would the inferences concerning the VAR dynamics differ?"
+  #
+  # 与 GoHIAR_BurstiVAR_4Burst_BaselineDelta.txt 的唯一区别:
+  #   - 每人每变量只有 1 个恒定截距 (跨全部 4 个 phase), 无 burst 结构
+  #   - VAR 在整条 224-slot 序列上连续运行 (无 burst 边界 reset;
+  #     GoHiAR 四个 phase 在时间上连续, 相邻 slot 恒为 6 小时间隔)
+  #   - 其余全部一致: priors, innovation Wishart, 独立随机效应
+  #
+  # 参数索引:
+  #   Level2Mean[1:2]  = population mean, y1 (Meaning), y2 (Relationship)
+  #   Level2Mean[3]    = AR y1 (Meaning)
+  #   Level2Mean[4]    = AR y2 (Relationship)
+  #   Level2Mean[5]    = CR y1(Meaning) -> y2(Relationship)
+  #   Level2Mean[6]    = CR y2(Relationship) -> y1(Meaning)
+  #   Level2Sigma[1:6] = 对应 between-person SDs
+  # ===========================================================================
+
+  # PART 1. Level-1 model (within-person VAR, single continuous series)
+  for (pp in 1:P) {
+
+    mu[pp,1,1:2] <- person_params[pp,1:2]
+    Y[pp,1,1:2] ~ dmnorm(mu[pp,1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,1,1:2] <- Y[pp,1,1:2] - person_params[pp,1:2]
+
+    for (tt in 2:T4) {
+      mu[pp,tt,1:2] <- person_params[pp,1:2] + c(
+        AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2],
+        AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2], InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] <- Y[pp,tt,1:2] - person_params[pp,1:2]
+    }
+
+    # PART 2. Level-2 model (between-person; 独立随机效应)
+    for (k in 1:6) {
+      person_params[pp,k] ~ dnorm(Level2Mean[k], tau_L2[k])
+    }
+
+    AR[pp,1] <- person_params[pp,3]   # AR y1 (Meaning)
+    AR[pp,2] <- person_params[pp,4]   # AR y2 (Relationship)
+    CR[pp,1] <- person_params[pp,5]   # CR y1 -> y2
+    CR[pp,2] <- person_params[pp,6]   # CR y2 -> y1
+  }
+
+  # PART 3. Priors (与 BaselineDelta 模型一致)
+  Level2Mean[1] ~ dnorm(75, 0.0004)
+  Level2Mean[2] ~ dnorm(75, 0.0004)
+
+  Level2Mean[3] ~ dnorm(0, 0.01)T(-1.5, 1.5)   # AR y1
+  Level2Mean[4] ~ dnorm(0, 0.01)T(-1.5, 1.5)   # AR y2
+  Level2Mean[5] ~ dnorm(0, 0.01)                # CR y1->y2
+  Level2Mean[6] ~ dnorm(0, 0.01)                # CR y2->y1
+
+  for (k in 1:2) {
+    tau_L2[k] ~ dgamma(1, 300)
+    Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+  for (k in 3:6) {
+    tau_L2[k] ~ dgamma(1, 0.01)
+    Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+
+  InnovationPrec[1:2,1:2] ~ dwish(W0[1:2,1:2], df_res)
+  sigma_innovation[1:2,1:2] <- inverse(InnovationPrec[1:2,1:2])
+}

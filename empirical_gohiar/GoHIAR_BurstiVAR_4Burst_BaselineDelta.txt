@@ -1,0 +1,187 @@
+model {
+  # ===========================================================================
+  # GoHIAR_BurstiVAR_4Burst_BaselineDelta.txt
+  # 经验数据分析模型 (Go-HIAR Intervention Study, Li et al. 2026)
+  # 4-Burst BurstiVAR, burst intercept 采用 baseline + delta 参数化
+  #
+  # 变量:
+  #   y1 = Meaning of life (MOL), 0-100 scale
+  #   y2 = Relationship, 0-100 scale
+  #
+  # Burst 结构 (Go-HIAR Study, 4 periods × 4 blocks/day):
+  #   Burst 1 (P1): Pre-intervention,     Day  1-14, Tb = 56  ← BASELINE
+  #   Burst 2 (P2): Intervention,         Day 15-29, Tb = 60
+  #   Burst 3 (P3): Post-intervention I,  Day 30-42, Tb = 52
+  #   Burst 4 (P4): Post-intervention II, Day 43-56, Tb = 56
+  #
+  # Population-level intercept 参数化:
+  #   mu_base[1:2]  = Burst 1 (Pre-intervention) 的 baseline population mean
+  #   delta[1:2]    = Burst 2 - Burst 1 偏移 (Intervention effect)
+  #   delta[3:4]    = Burst 3 - Burst 1 偏移 (Post-I vs Pre)
+  #   delta[5:6]    = Burst 4 - Burst 1 偏移 (Post-II vs Pre)
+  #
+  #   Level2Mean[1:2] = mu_base[1:2]                 (Burst 1, baseline)
+  #   Level2Mean[3:4] = mu_base[1:2] + delta[1:2]    (Burst 2)
+  #   Level2Mean[5:6] = mu_base[1:2] + delta[3:4]    (Burst 3)
+  #   Level2Mean[7:8] = mu_base[1:2] + delta[5:6]    (Burst 4)
+  #
+  # VAR parameters:
+  #   Level2Mean[9]  = AR y1 (Meaning)
+  #   Level2Mean[10] = AR y2 (Relationship)
+  #   Level2Mean[11] = CR y1(Meaning) -> y2(Relationship)
+  #   Level2Mean[12] = CR y2(Relationship) -> y1(Meaning)
+  #
+  # 注意: 缺失数据 (Y 中的 NA) 由 JAGS 自动作为潜变量处理
+  # ===========================================================================
+
+  # PART 1. Level-1 model (within-person VAR)
+  for (pp in 1:P) { 
+
+    # ==================== Burst 1: P1 Pre-intervention — BASELINE =============
+    trend[pp,1,1:2] <- InterceptBurst1[pp,1:2]
+    mu[pp,1,1:2] <- trend[pp,1,1:2]
+    Y[pp,1,1:2] ~ dmnorm(mu[pp,1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,1,1:2] <- Y[pp,1,1:2] - trend[pp,1,1:2] 
+
+    for (tt in 2:T1) { 
+      trend[pp,tt,1:2] <- InterceptBurst1[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2] + c(
+        AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+        AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2], InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+
+    # ==================== Burst 2: P2 Intervention ============================
+    trend[pp,T1+1,1:2] <- InterceptBurst2[pp,1:2]
+    mu[pp,T1+1,1:2] <- trend[pp,T1+1,1:2]
+    Y[pp,T1+1,1:2] ~ dmnorm(mu[pp,T1+1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,T1+1,1:2] <- Y[pp,T1+1,1:2] - trend[pp,T1+1,1:2] 
+    for (tt in (T1+2):T2) { 
+      trend[pp,tt,1:2] <- InterceptBurst2[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2] + c(
+        AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+        AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2], InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+
+    # ==================== Burst 3: P3 Post-intervention I =====================
+    trend[pp,T2+1,1:2] <- InterceptBurst3[pp,1:2]
+    mu[pp,T2+1,1:2] <- trend[pp,T2+1,1:2]
+    Y[pp,T2+1,1:2] ~ dmnorm(mu[pp,T2+1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,T2+1,1:2] <- Y[pp,T2+1,1:2] - trend[pp,T2+1,1:2] 
+    for (tt in (T2+2):T3) { 
+      trend[pp,tt,1:2] <- InterceptBurst3[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2] + c(
+        AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+        AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2], InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+
+    # ==================== Burst 4: P4 Post-intervention II ====================
+    trend[pp,T3+1,1:2] <- InterceptBurst4[pp,1:2]
+    mu[pp,T3+1,1:2] <- trend[pp,T3+1,1:2]
+    Y[pp,T3+1,1:2] ~ dmnorm(mu[pp,T3+1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,T3+1,1:2] <- Y[pp,T3+1,1:2] - trend[pp,T3+1,1:2] 
+    for (tt in (T3+2):T4) { 
+      trend[pp,tt,1:2] <- InterceptBurst4[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2] + c(
+        AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+        AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2], InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+
+    # ==========================================================================
+    # PART 2. Level-2 model (between-person)
+    # ==========================================================================
+
+    # Intercept parameters (8 parameters: 4 bursts × 2 variables)
+    # Level2Mean[k] 由 PART 3 中的 baseline + delta 决定
+    for(k in 1:8){
+      person_params[pp,k] ~ dnorm(Level2Mean[k], tau_L2[k])
+    }
+
+    # AR & CR parameters (4 parameters: k=9:12)
+    for(k in 9:12){
+      person_params[pp,k] ~ dnorm(Level2Mean[k], tau_L2[k])
+    }
+
+    # Burst Intercepts (从 person_params 中提取)
+    InterceptBurst1[pp,1:2] <- person_params[pp,1:2]   # Baseline
+    InterceptBurst2[pp,1:2] <- person_params[pp,3:4]   # Baseline + delta[1:2]
+    InterceptBurst3[pp,1:2] <- person_params[pp,5:6]   # Baseline + delta[3:4]
+    InterceptBurst4[pp,1:2] <- person_params[pp,7:8]   # Baseline + delta[5:6]
+
+    # VAR parameters
+    AR[pp,1] <- person_params[pp,9]    # AR for y1 (Meaning)
+    AR[pp,2] <- person_params[pp,10]   # AR for y2 (Relationship)
+    CR[pp,1] <- person_params[pp,11]   # CR: y1(Meaning) -> y2(Relationship)
+    CR[pp,2] <- person_params[pp,12]   # CR: y2(Relationship) -> y1(Meaning)
+  }
+
+  # ==========================================================================
+  # PART 3. Prior distributions (Baseline + Delta 参数化)
+  # ==========================================================================
+
+  # --- Baseline: Burst 1 (P1: Pre-intervention) population means ---
+  # mu_base[1] = Burst 1 y1 (Meaning) 的 population mean
+  # mu_base[2] = Burst 1 y2 (Relationship) 的 population mean
+  # 弱信息先验: 中心在 75 (接近观测 grand mean), precision = 1/50^2
+  mu_base[1] ~ dnorm(75, 0.0004)
+  mu_base[2] ~ dnorm(75, 0.0004)
+
+  # Level2Mean[1:2] = Baseline (Burst 1)
+  Level2Mean[1] <- mu_base[1]
+  Level2Mean[2] <- mu_base[2]
+
+  # --- Delta: 其他 burst 相对于 Burst 1 (baseline) 的偏移 ---
+  # delta[1:2]: Burst 2 - Burst 1 (Intervention effect)
+  # delta[3:4]: Burst 3 - Burst 1 (Post-I vs Pre)
+  # delta[5:6]: Burst 4 - Burst 1 (Post-II vs Pre)
+  # 先验: 中心在 0, SD = 25 (允许较大偏移但仍弱信息化)
+  for(d in 1:6){
+    delta[d] ~ dnorm(0, 0.0016)   # precision = 1/25^2 = 0.0016
+  }
+
+  # --- Level2Mean[3:4]: Burst 2 (P2: Intervention) ---
+  Level2Mean[3] <- mu_base[1] + delta[1]   # Burst 2, y1 (Meaning)
+  Level2Mean[4] <- mu_base[2] + delta[2]   # Burst 2, y2 (Relationship)
+
+  # --- Level2Mean[5:6]: Burst 3 (P3: Post-I) ---
+  Level2Mean[5] <- mu_base[1] + delta[3]   # Burst 3, y1 (Meaning)
+  Level2Mean[6] <- mu_base[2] + delta[4]   # Burst 3, y2 (Relationship)
+
+  # --- Level2Mean[7:8]: Burst 4 (P4: Post-II) ---
+  Level2Mean[7] <- mu_base[1] + delta[5]   # Burst 4, y1 (Meaning)
+  Level2Mean[8] <- mu_base[2] + delta[6]   # Burst 4, y2 (Relationship)
+
+  # --- Population means for AR & CR ---
+  Level2Mean[9]  ~ dnorm(0, 0.01)T(-1.5, 1.5)   # AR y1 (Meaning)
+  Level2Mean[10] ~ dnorm(0, 0.01)T(-1.5, 1.5)   # AR y2 (Relationship)
+  Level2Mean[11] ~ dnorm(0, 0.01)                # CR y1->y2
+  Level2Mean[12] ~ dnorm(0, 0.01)                # CR y2->y1
+
+  # --- Between-person precision for intercepts ---
+  # SELF 原始: dgamma(1, 1), 适合 1-4 scale (E[sigma] ≈ 1)
+  # Go-HIAR:   dgamma(1, 300), 适合 0-100 scale (E[tau]=1/300, E[sigma]=sqrt(300)≈17.3)
+  # 观测到的 between-person SD ≈ 15-20, 此先验覆盖合理范围
+  for(k in 1:8){
+    tau_L2[k] ~ dgamma(1, 300)
+    Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+
+  # --- Between-person precision for AR & CR ---
+  # 与 SELF 一致: dgamma(1, 0.01), AR/CR 的 between-person SD 量级 ~ 0.1-0.3
+  for(k in 9:12){
+    tau_L2[k] ~ dgamma(1, 0.01)
+    Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+
+  # --- Innovation precision matrix ---
+  InnovationPrec[1:2,1:2] ~ dwish(W0[1:2,1:2], df_res)
+  sigma_innovation[1:2,1:2] <- inverse(InnovationPrec[1:2,1:2])
+
+}

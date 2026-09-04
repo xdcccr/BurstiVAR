@@ -1,0 +1,104 @@
+model {
+  # PART 1. Level-1 model (within-person)
+  for (pp in 1:P) { 
+    # fisrt time point
+    trend[pp,1,1:2] <- InterceptBurst1[pp,1:2]
+    mu[pp,1,1:2] <- trend[pp,1,1:2]
+    Y[pp,1,1:2] ~ dmnorm(mu[pp,1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,1,1:2] <- Y[pp,1,1:2] - trend[pp,1,1:2] 
+    
+    # t>=2 Burst1
+    for (tt in 2:T1) { 
+      # current trend
+      trend[pp,tt,1:2] <- InterceptBurst1[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2]+c(AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+                                    AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2],InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+    
+    # t>=2 Burst2
+    # fisrt time point
+    trend[pp,T1+1,1:2] <- InterceptBurst2[pp,1:2]
+    mu[pp,T1+1,1:2] <- trend[pp,T1+1,1:2]
+    Y[pp,T1+1,1:2] ~ dmnorm(mu[pp,T1+1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,T1+1,1:2] <- Y[pp,T1+1,1:2] - trend[pp,T1+1,1:2] 
+    for (tt in (T1+2):T2) { 
+      # current trend
+      trend[pp,tt,1:2] <- InterceptBurst2[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2]+c(AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+                                    AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2],InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+    
+    # t>=2 Burst3
+    # fisrt time point
+    trend[pp,T2+1,1:2] <- InterceptBurst3[pp,1:2]
+    mu[pp,T2+1,1:2] <- trend[pp,T2+1,1:2]
+    Y[pp,T2+1,1:2] ~ dmnorm(mu[pp,T2+1,1:2], InnovationPrec[1:2,1:2])
+    dev[pp,T2+1,1:2] <- Y[pp,T2+1,1:2] - trend[pp,T2+1,1:2] 
+    for (tt in (T2+2):T3) { 
+      # current trend
+      trend[pp,tt,1:2] <- InterceptBurst3[pp,1:2]
+      mu[pp,tt,1:2] <- trend[pp,tt,1:2]+c(AR[pp,1]*dev[pp,tt-1,1] + CR[pp,2]*dev[pp,tt-1,2], 
+                                    AR[pp,2]*dev[pp,tt-1,2] + CR[pp,1]*dev[pp,tt-1,1])
+      Y[pp,tt,1:2] ~ dmnorm(mu[pp,tt,1:2],InnovationPrec[1:2,1:2])
+      dev[pp,tt,1:2] = Y[pp,tt,1:2] - trend[pp,tt,1:2]
+    }
+    
+    # PART 2. Level-2 model (between-person)
+    
+    # trend parameters
+    for(k in 1:6){
+    person_params[pp,k] ~ dnorm(Level2Mean[k], tau_L2[k])
+    }
+    
+    # AR & CR parameters
+    for(k in 7:10){
+    person_params[pp,k] ~ dnorm(Level2Mean[k], tau_L2[k])
+    }
+    
+    # Gompertz trends
+    InterceptBurst1[pp,1:2] <- person_params[pp,1:2]
+    InterceptBurst2[pp,1:2] <- person_params[pp,3:4]
+    InterceptBurst3[pp,1:2] <- person_params[pp,5:6]  
+    
+    # VAR trends
+    AR[pp,1] <- person_params[pp,7]   # reading AR
+    AR[pp,2] <- person_params[pp,8]   # math AR
+    CR[pp,1] <- person_params[pp,9]   # reading->math
+    CR[pp,2] <- person_params[pp,10]  # math->reading
+  }
+  
+  # PART 3. Prior distributions
+  # Mean
+  Level2Mean[1] ~ dnorm(0,1/25)
+  Level2Mean[2] ~ dnorm(0,1/25)
+  Level2Mean[3] ~ dnorm(0,1/25)
+  Level2Mean[4] ~ dnorm(0,1/25)
+  Level2Mean[5] ~ dnorm(0,1/25)
+  Level2Mean[6] ~ dnorm(0,1/25)
+  
+  Level2Mean[7] ~ dnorm(0,0.01)T(-1.5,1.5)
+  Level2Mean[8] ~ dnorm(0,0.01)T(-1.5,1.5)
+  Level2Mean[9] ~ dnorm(0,0.01)
+  Level2Mean[10] ~ dnorm(0,0.01)
+
+  
+  # Cov
+  for(k in 1:6){
+  tau_L2[k] ~ dgamma(1, 1)
+  Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+  }
+  
+  for(k in 7:10){
+  tau_L2[k] ~ dgamma(1, 0.01)
+  Level2Sigma[k] <- 1/sqrt(tau_L2[k])
+}
+
+  # Innovation precision matrix
+  InnovationPrec[1:2,1:2] ~ dwish(W0[1:2,1:2], df_res)
+  sigma_innovation[1:2,1:2] <- inverse(InnovationPrec[1:2,1:2])
+  
+}

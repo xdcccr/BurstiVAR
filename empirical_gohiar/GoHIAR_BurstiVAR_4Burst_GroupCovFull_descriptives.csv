@@ -1,0 +1,13 @@
+"Group","Burst","Phase","N","Mean","Median","Min","Max","SD"
+"Pooled (N=108)",1,"P1:Pre",108,38.94,40,30,43,2.66
+"Pooled (N=108)",2,"P2:Intervention",108,40.26,42,17,47,5.6
+"Pooled (N=108)",3,"P3:Post-I",108,35.84,37,10,41,4.12
+"Pooled (N=108)",4,"P4:Post-II",108,37.23,39,12,44,5.22
+"Control (Group=1) (N=54)",1,"P1:Pre",54,39.09,39.5,30,42,2.27
+"Control (Group=1) (N=54)",2,"P2:Intervention",54,41.44,42,25,47,4.09
+"Control (Group=1) (N=54)",3,"P3:Post-I",54,35.91,37,10,40,4.83
+"Control (Group=1) (N=54)",4,"P4:Post-II",54,37.52,39,17,44,5.06
+"Intervention (Group=3) (N=54)",1,"P1:Pre",54,38.8,40,31,43,3.02
+"Intervention (Group=3) (N=54)",2,"P2:Intervention",54,39.07,41,17,47,6.6
+"Intervention (Group=3) (N=54)",3,"P3:Post-I",54,35.78,36,28,41,3.32
+"Intervention (Group=3) (N=54)",4,"P4:Post-II",54,36.94,39,12,42,5.41

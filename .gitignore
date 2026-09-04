@@ -1,0 +1,25 @@
+# R artifacts
+.Rhistory
+.RData
+.Rdata
+.Rproj.user/
+*.Rproj
+.Rapp.history
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# OS cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
+._*
+
+# Private data — never commit
+*.sav
+*.RData
+*.Rdata
+data_private/

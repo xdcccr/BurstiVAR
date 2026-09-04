@@ -1,0 +1,8 @@
+Condition,N_reps,N_nonconverged_Rhat1.10,Pct_nonconverged_Rhat1.10,N_nonconverged_Rhat1.05,Pct_nonconverged_Rhat1.05,N_anyESS_lt200,Pct_anyESS_lt200,N_anyESS_lt100,Pct_anyESS_lt100,Global_Min_ESS,Global_Max_RHAT
+Study1_Tb5_N100,100,0,0,0,0,0,0,0,0,452,1.0116
+Study1_Tb5_N500,100,0,0,0,0,0,0,0,0,221,1.0357
+Study1_Tb20_N100,100,0,0,0,0,0,0,0,0,2044,1.0037
+Study1_Tb20_N500,100,0,0,0,0,0,0,0,0,1148,1.0034
+Study2_GoBurstiVAR_Tb5_N100,100,0,0,0,0,1,1,0,0,171,1.0151
+Study2_GoBurstiVAR_Tb5_N500,100,0,0,0,0,0,0,0,0,338,1.0217
+Study2_GoBurstiVAR_Tb20_N100,100,0,0,0,0,0,0,0,0,237,1.0146
