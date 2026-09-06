@@ -13,6 +13,9 @@ the posterior summary. Start with `tutorial.md`; the same code is collected in
 - `tutorial.md` — knitted from `tutorial.Rmd`
   (`knitr::knit("tutorial.Rmd", output = "tutorial.md")`), so every number
   shown comes from an actual run. Read this one on GitHub.
+- `tutorial.html` — the same knitted tutorial as a standalone, self-contained
+  HTML page (GitHub displays HTML files as source; download it and open in a
+  browser).
 - `tutorial.R` — the same code as a runnable script, for readers who prefer
   to run and modify it directly.
 - `mlGVARNoCorNoME_BurstIntercept_3Burst.txt` — the JAGS model file. This is
