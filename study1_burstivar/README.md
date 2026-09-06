@@ -121,7 +121,11 @@ so `result/` grows large; budget disk space accordingly.
   Tb = 3 summary CSVs (`..._3Burst_3T_MCfileSumm_nT9_nP{100,500}.csv`) in
   `results/` come from the 2026-09-04 corrected re-run (200/200 replications;
   under the corrected design all burst-intercept SDs recover with |rBias|
-  below 3% and coverage between .89 and .98 at Tb = 3). Tables regenerated
+  below 3% and coverage between .89 and .98 at Tb = 3). In short, the
+  under-recovery originally reported for the two largest y2 SDs in this cell
+  (relative bias of about -.25 and -.34 with near-zero coverage) was an
+  artifact of summarizing the estimates against the intended rather than the
+  actually generated values, not a property of the model. Tables regenerated
   from `results/` therefore reflect the corrected Tb = 3 values, which
   supersede the originally reported ones for the two affected y2 SD rows.
 - All data in this study are simulated. No participant data are included or
