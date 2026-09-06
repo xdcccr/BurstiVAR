@@ -14,7 +14,11 @@ the published Study 1 results: `mlGVARNoCorNoME_BurstIntercept_3Burst.txt`
 (the JAGS model) and `posteriorSummaryStats.R` (the posterior summary
 utility). Only a provenance header was added to each.
 
-
+```{r setup, include=FALSE}
+# Knit-time display option only: suppress the MCMC progress bars, which do
+# not render well in a static document. No modeling setting is changed.
+options(jags.pb = "none")
+```
 
 ## 1. What BurstiVAR is
 
@@ -61,14 +65,12 @@ between-person SDs grow from 1 to 1.5 to 2. The AR effects are .3 and .2, the
 cross-lagged effect of `y1` on `y2` is -.15, the reverse effect is 0, and the
 innovations have variance 1 with covariance .3.
 
-
-``` r
+```{r libraries, message=FALSE, warning=FALSE}
 library(mvtnorm)
 library(rjags)
 ```
 
-
-``` r
+```{r design}
 nBurst       <- 3    # number of bursts (B)
 nT_per_burst <- 5    # occasions per burst (Tb)
 nT           <- nBurst * nT_per_burst   # total occasions per person (15)
@@ -100,8 +102,7 @@ The person-specific parameters live in one vector per person. The order
 matters, because the JAGS model uses the same order: the six burst intercepts
 first, then the four dynamic coefficients.
 
-
-``` r
+```{r param-distribution}
 # Parameter order (matches the JAGS model file):
 #   [1:2] burst-1 intercepts, [3:4] burst-2, [5:6] burst-3,
 #   [7] AR y1, [8] AR y2, [9] CR y1->y2, [10] CR y2->y1
@@ -129,8 +130,7 @@ through the bursts. At the first occasion of a burst the series starts at the
 burst intercept plus a fresh innovation. After that, each occasion's deviation
 from the intercept follows the VAR(1) process.
 
-
-``` r
+```{r simulate}
 set.seed(1)
 
 burst_boundaries <- seq(0, nT, by = nT_per_burst)   # 0, 5, 10, 15
@@ -183,10 +183,6 @@ cat("Simulated", nP, "persons x", nT, "occasions;",
     "saved to tutorial_simulated_data.csv\n")
 ```
 
-```
-## Simulated 50 persons x 15 occasions; saved to tutorial_simulated_data.csv
-```
-
 ## 3. Fit the model with rjags
 
 The model file `mlGVARNoCorNoME_BurstIntercept_3Burst.txt` in this folder is
@@ -200,8 +196,7 @@ the number of persons `P`, the cumulative burst boundaries `T1`, `T2`, `T3`
 (here 5, 10, 15), and the Wishart prior inputs `W0` and `df_res` for the
 innovation precision matrix.
 
-
-``` r
+```{r fit}
 jags_data <- list(
   Y      = Y,
   P      = nP,
@@ -224,30 +219,11 @@ t0 <- proc.time()
 jagsModel <- jags.model("mlGVARNoCorNoME_BurstIntercept_3Burst.txt",
                         data = jags_data, inits = inits,
                         n.chains = 2, n.adapt = 1000)
-```
-
-```
-## Compiling model graph
-##    Resolving undeclared variables
-##    Allocating nodes
-## Graph information:
-##    Observed stochastic nodes: 750
-##    Unobserved stochastic nodes: 521
-##    Total graph size: 8209
-## 
-## Initializing model
-```
-
-``` r
 update(jagsModel, n.iter = 1000)                       # burn-in
 codaSamples <- coda.samples(jagsModel,
                             variable.names = parameters,
                             n.iter = 2000)
 cat("MCMC finished in", round((proc.time() - t0)[3], 1), "seconds\n")
-```
-
-```
-## MCMC finished in 6.2 seconds
 ```
 
 A note on the MCMC settings. The paper ran 2 chains with 5000 adaptation
@@ -268,8 +244,7 @@ for the paper's results. It returns one row per monitored parameter with the
 posterior mean, posterior SD, 95% credible interval (both equal-tailed
 percentile and HDI versions), effective sample size, and R-hat.
 
-
-``` r
+```{r summarize}
 source("posteriorSummaryStats.R")
 resulttable <- summarizePost(codaSamples)
 write.csv(resulttable, "tutorial_result_summary.csv")
@@ -294,8 +269,7 @@ mean, posterior SD, 95% equal-tailed credible interval, ESS, and R-hat, with
 the generating value in the `true` column). Because this document is knitted,
 the numbers are the actual output of the fit above:
 
-
-``` r
+```{r comparison}
 true_values <- c(
   # Level2Mean[1..10]
   param_means,
@@ -310,34 +284,6 @@ comparison <- cbind(true = true_values,
                                     "PCI 2.50%", "PCI 97.50%",
                                     "ESS", "RHAT")])
 print(round(comparison, 3))
-```
-
-```
-##                        true   mean   PSD PCI 2.50% PCI 97.50%  ESS  RHAT
-## Level2Mean[1]          0.00  0.101 0.188    -0.271      0.470 2500 1.000
-## Level2Mean[2]          1.00  1.221 0.168     0.888      1.544 2641 1.000
-## Level2Mean[3]          1.00  0.936 0.197     0.550      1.328 2488 1.000
-## Level2Mean[4]          1.50  1.062 0.222     0.623      1.489 3176 1.000
-## Level2Mean[5]          2.00  2.073 0.358     1.356      2.773 3685 1.000
-## Level2Mean[6]          2.00  2.358 0.336     1.694      3.008 3646 1.002
-## Level2Mean[7]          0.30  0.261 0.073     0.123      0.407  100 1.000
-## Level2Mean[8]          0.20  0.174 0.061     0.047      0.290  151 1.000
-## Level2Mean[9]         -0.15 -0.197 0.058    -0.317     -0.088  129 1.002
-## Level2Mean[10]         0.00 -0.045 0.060    -0.161      0.073   94 1.002
-## Level2Sigma[1]         1.00  1.144 0.156     0.864      1.471 1358 1.000
-## Level2Sigma[2]         1.00  1.065 0.134     0.822      1.342 1582 1.000
-## Level2Sigma[3]         1.50  1.249 0.158     0.975      1.587 1719 1.000
-## Level2Sigma[4]         1.50  1.505 0.169     1.214      1.867 2589 1.000
-## Level2Sigma[5]         2.00  2.433 0.266     1.968      3.031 3052 1.000
-## Level2Sigma[6]         2.00  2.368 0.251     1.931      2.905 3203 1.000
-## Level2Sigma[7]         0.10  0.124 0.050     0.052      0.240  150 1.003
-## Level2Sigma[8]         0.10  0.123 0.050     0.052      0.243  136 1.004
-## Level2Sigma[9]         0.10  0.111 0.043     0.051      0.209  162 1.001
-## Level2Sigma[10]        0.10  0.095 0.034     0.047      0.182  176 1.000
-## sigma_innovation[1,1]  1.00  1.162 0.078     1.020      1.326  362 1.000
-## sigma_innovation[2,1]  0.30  0.306 0.052     0.207      0.409  487 1.001
-## sigma_innovation[1,2]  0.30  0.306 0.052     0.207      0.409  487 1.001
-## sigma_innovation[2,2]  1.00  1.001 0.064     0.884      1.136  917 1.000
 ```
 
 How to read this. Take `Level2Mean[3]`, the burst-2 intercept mean of `y1`.

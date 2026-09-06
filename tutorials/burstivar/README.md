@@ -8,9 +8,13 @@ the posterior summary. Start with `tutorial.md`; the same code is collected in
 
 ## Files
 
-- `tutorial.md` — the tutorial text, with all code inline and the actual
-  output of a validated run.
-- `tutorial.R` — the same code as a runnable script.
+- `tutorial.Rmd` — the tutorial source (R Markdown); knitting it runs all
+  code and embeds the output.
+- `tutorial.md` — knitted from `tutorial.Rmd`
+  (`knitr::knit("tutorial.Rmd", output = "tutorial.md")`), so every number
+  shown comes from an actual run. Read this one on GitHub.
+- `tutorial.R` — the same code as a runnable script, for readers who prefer
+  to run and modify it directly.
 - `mlGVARNoCorNoME_BurstIntercept_3Burst.txt` — the JAGS model file. This is
   the actual file that produced the published Study 1 three-burst results
   (only a provenance header was added).

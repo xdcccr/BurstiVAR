@@ -15,9 +15,13 @@ pipeline that produces the published numbers lives in
 
 ## Files
 
-- `tutorial.md` — the tutorial text, with real output from a validated run
-  of `tutorial.R` pasted in.
-- `tutorial.R` — the companion script; runs everything end to end.
+- `tutorial.Rmd` — the tutorial source (R Markdown); knitting it runs both
+  fits and embeds the output.
+- `tutorial.md` — knitted from `tutorial.Rmd`
+  (`knitr::knit("tutorial.Rmd", output = "tutorial.md")`), so every number
+  shown comes from an actual run. Read this one on GitHub.
+- `tutorial.R` — the companion script; runs everything end to end, for
+  readers who prefer to run and modify it directly.
 - `mlGVARNoCorNoME_GompertzBurst.txt` — GoBurstiVAR JAGS model (the
   published Study 2 version; provenance header at top).
 - `mlGVARNoCorNoME_BurstIntercept_5Burst.txt` — BurstiVAR free-intercept

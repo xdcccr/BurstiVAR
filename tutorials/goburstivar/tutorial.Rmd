@@ -18,8 +18,7 @@ the published Study 2 results (see the provenance headers).
 
 We start by loading the packages and the posterior summary utilities:
 
-
-``` r
+```{r setup, message=FALSE, warning=FALSE}
 base_path <- "."   # run from this directory
 
 options(width = 200)
@@ -108,8 +107,7 @@ each burst, resetting the deviation process at every burst start. The chunk
 ends by printing the burst-level means implied by the mean Gompertz
 parameters — the growth pattern buried in the data:
 
-
-``` r
+```{r simulate}
 set.seed(1)
 
 nP          <- 40    # persons (small, so the tutorial finishes in minutes)
@@ -213,29 +211,9 @@ write.csv(dat_long, file.path(base_path, "tutorial_data_gompertzburst.csv"),
 
 cat("Simulated dataset:", nP, "persons x", nT, "time points (",
     nBurst, "bursts x", T_per_burst, "points ).\n")
-```
-
-```
-## Simulated dataset: 40 persons x 25 time points ( 5 bursts x 5 points ).
-```
-
-``` r
 cat("Population burst-level means implied by the mean Gompertz parameters:\n")
-```
-
-```
-## Population burst-level means implied by the mean Gompertz parameters:
-```
-
-``` r
 print(round(rbind(y1 = gompertz(1:5, theta10_1, theta20_1, theta30_1),
                   y2 = gompertz(1:5, theta10_2, theta20_2, theta30_2)), 3))
-```
-
-```
-##     [,1]  [,2]  [,3]  [,4]  [,5]
-## y1 3.317 6.663 8.613 9.465 9.800
-## y2 2.602 4.829 6.377 7.225 7.642
 ```
 
 (Columns 1 through 5 are bursts 1 through 5.)
@@ -284,8 +262,7 @@ incomplete; for this demonstration that is acceptable.
 First the GoBurstiVAR fit — this is the slow one, several minutes on a
 typical desktop:
 
-
-``` r
+```{r fit-goburstivar}
 jags_data <- list(
   Y = Y, P = nP, W0 = diag(2), df_res = 3,
   T1 = T_per_burst,        # end of burst 1
@@ -316,20 +293,13 @@ gompSamples <- coda.samples(gompModel, variable.names = parameters,
                             n.iter = n_iter, progress.bar = "none")
 t_gomp <- proc.time() - t0
 cat("GoBurstiVAR fit took", round(t_gomp[3] / 60, 1), "minutes.\n")
-```
 
-```
-## GoBurstiVAR fit took 3.7 minutes.
-```
-
-``` r
 fit_gomp <- summarizePost(gompSamples)
 ```
 
 Then BurstiVAR on the same data, with the same MCMC settings:
 
-
-``` r
+```{r fit-burstivar}
 t0 <- proc.time()
 biModel <- jags.model(file.path(base_path, "mlGVARNoCorNoME_BurstIntercept_5Burst.txt"),
                       data = jags_data, inits = inits,
@@ -339,13 +309,7 @@ biSamples <- coda.samples(biModel, variable.names = parameters,
                           n.iter = n_iter, progress.bar = "none")
 t_bi <- proc.time() - t0
 cat("BurstiVAR fit took", round(t_bi[3] / 60, 1), "minutes.\n")
-```
 
-```
-## BurstiVAR fit took 0.2 minutes.
-```
-
-``` r
 fit_bi <- summarizePost(biSamples)
 ```
 
@@ -373,8 +337,7 @@ because both models estimate exactly the same four VAR coefficients and their
 between-person SDs. The chunk below prints them side by side, with the ratio
 of posterior SDs (BurstiVAR / GoBurstiVAR) as a simple efficiency measure:
 
-
-``` r
+```{r compare-var}
 var_labels <- c("mu_phi11 (AR y1)", "mu_phi22 (AR y2)",
                 "mu_phi21 (y1 -> y2)", "mu_phi12 (y2 -> y1)",
                 "sigma_phi11", "sigma_phi22", "sigma_phi21", "sigma_phi12")
@@ -396,18 +359,6 @@ var_compare$PSD_ratio_Bi_over_Go <-
   round(var_compare$BurstiVAR_PSD / var_compare$GoBurstiVAR_PSD, 2)
 
 print(var_compare, digits = 3)
-```
-
-```
-##             parameter  true GoBurstiVAR_mean GoBurstiVAR_PSD BurstiVAR_mean BurstiVAR_PSD PSD_ratio_Bi_over_Go
-## 1    mu_phi11 (AR y1)  0.30           0.2639          0.0454         0.3056        0.0638                 1.41
-## 2    mu_phi22 (AR y2)  0.20           0.1795          0.0452         0.1821        0.0608                 1.35
-## 3 mu_phi21 (y1 -> y2) -0.15          -0.2088          0.0429        -0.2608        0.0515                 1.20
-## 4 mu_phi12 (y2 -> y1) -0.10          -0.1177          0.0415        -0.1801        0.0458                 1.10
-## 5         sigma_phi11  0.10           0.0986          0.0337         0.0958        0.0357                 1.06
-## 6         sigma_phi22  0.10           0.1366          0.0495         0.1986        0.0604                 1.22
-## 7         sigma_phi21  0.10           0.1272          0.0449         0.1611        0.0504                 1.12
-## 8         sigma_phi12  0.10           0.0977          0.0307         0.0882        0.0296                 0.96
 ```
 
 Two things to notice. First, the posterior means of the VAR fixed effects are
@@ -432,8 +383,7 @@ GoBurstiVAR's own reward is that it returns interpretable growth parameters.
 The next chunk compares the estimated population means and SDs of the six
 Gompertz parameters against the generating values:
 
-
-``` r
+```{r gompertz-recovery}
 gomp_labels <- c("theta1 y1 (asymptote)", "theta2 y1 (displacement)", "theta3 y1 (growth rate)",
                  "theta1 y2 (asymptote)", "theta2 y2 (displacement)", "theta3 y2 (growth rate)")
 gomp_recovery <- data.frame(
@@ -446,16 +396,6 @@ gomp_recovery <- data.frame(
   row.names = NULL
 )
 print(gomp_recovery, digits = 3)
-```
-
-```
-##                  parameter true_mean est_mean    PSD true_SD est_SD
-## 1    theta1 y1 (asymptote)      10.0   10.409 0.4020    2.00  2.362
-## 2 theta2 y1 (displacement)       3.0    3.256 0.2280    0.50  0.701
-## 3  theta3 y1 (growth rate)       1.0    1.020 0.0550    0.20  0.147
-## 4    theta1 y2 (asymptote)       8.0    7.502 0.2755    1.50  1.479
-## 5 theta2 y2 (displacement)       2.5    2.759 0.1974    0.40  0.540
-## 6  theta3 y2 (growth rate)       0.8    0.912 0.0622    0.15  0.179
 ```
 
 With only 5 bursts and 40 persons the population means of the Gompertz
@@ -474,8 +414,7 @@ which is not exactly the curve evaluated at the mean parameters. The code
 obtains the true values by Monte Carlo, and the GoBurstiVAR column is a
 plug-in of the posterior-mean parameters into the curve:
 
-
-``` r
+```{r burst-means}
 set.seed(2)
 M <- 200000
 mc_y1 <- sapply(1:5, function(b)
@@ -506,28 +445,13 @@ burst_means <- data.frame(
 print(burst_means, digits = 3)
 ```
 
-```
-##    burst variable true_MC BurstiVAR_free GoBurstiVAR_curve
-## 1      1       y1    3.38           3.37              3.22
-## 2      2       y1    6.55           6.69              6.81
-## 3      3       y1    8.42           8.88              8.93
-## 4      4       y1    9.29           9.79              9.85
-## 5      5       y1    9.68          10.02             10.20
-## 6      1       y2    2.65           2.54              2.48
-## 7      2       y2    4.80           4.81              4.81
-## 8      3       y2    6.28           6.08              6.27
-## 9      4       y2    7.11           6.82              6.98
-## 10     5       y2    7.54           7.16              7.29
-```
-
 Both models track the growth pattern. This is the sense in which BurstiVAR is
 "form-free but not blind": its free intercepts recover whatever trajectory
 the burst means follow, Gompertz included, without being told the form.
 
 ### 4d. Innovation covariance and convergence
 
-
-``` r
+```{r innovation}
 innov_compare <- data.frame(
   parameter        = c("innovation var y1", "innovation cov y1,y2", "innovation var y2"),
   true             = c(1.0, 0.3, 1.0),
@@ -540,32 +464,13 @@ innov_compare <- data.frame(
 print(innov_compare, digits = 3)
 ```
 
-```
-##              parameter true GoBurstiVAR_mean BurstiVAR_mean
-## 1    innovation var y1  1.0            1.158          1.184
-## 2 innovation cov y1,y2  0.3            0.333          0.286
-## 3    innovation var y2  1.0            1.043          0.994
-```
-
 Finally, a quick convergence check on the reduced-MCMC run:
 
-
-``` r
+```{r convergence}
 cat("Max RHAT, GoBurstiVAR:", max(fit_gomp$RHAT),
     "| min ESS:", min(fit_gomp$ESS), "\n")
-```
-
-```
-## Max RHAT, GoBurstiVAR: 1.0572 | min ESS: 62
-```
-
-``` r
 cat("Max RHAT, BurstiVAR:  ", max(fit_bi$RHAT),
     "| min ESS:", min(fit_bi$ESS), "\n")
-```
-
-```
-## Max RHAT, BurstiVAR:   1.0285 | min ESS: 99
 ```
 
 The RHAT values are acceptable for a demonstration, but the smallest
@@ -575,8 +480,7 @@ only. For a real analysis, run the paper's full MCMC settings and check RHAT and
 effective sample sizes parameter by parameter. The full `summarizePost`
 tables contain both, and the last chunk writes them to CSV:
 
-
-``` r
+```{r save-tables}
 write.csv(fit_gomp, file.path(base_path, "tutorial_fit_goburstivar.csv"))
 write.csv(fit_bi,   file.path(base_path, "tutorial_fit_burstivar.csv"))
 write.csv(var_compare, file.path(base_path, "tutorial_var_comparison.csv"),
