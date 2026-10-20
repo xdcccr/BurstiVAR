@@ -437,12 +437,13 @@ between-person SD for all six parameters (three per variable).
 Everything else — the within-burst VAR(1) on the deviations, the
 deviation reset at each burst start, the innovation covariance matrix —
 is identical to BurstiVAR.</p>
-<p>When the random-effect structures are taken as independent,
-GoBurstiVAR is <strong>nested</strong> under BurstiVAR’s intercept
-structure: the Gompertz curve constrains the 2B free burst means (10
-here, with B = 5) to lie on a 3-parameter curve per variable (6
-parameters). The paper’s Study 2 asks what that restriction is worth.
-The answer is an asymmetry:</p>
+<p>GoBurstiVAR is a <strong>parametric variant</strong> of BurstiVAR, not
+a nested special case: the Gompertz curve replaces the 2B free burst means
+(10 here, with B = 5) with a 3-parameter curve per variable (6
+parameters), and each person’s Gompertz parameters make that person’s
+burst intercepts covary through the shared curve, whereas BurstiVAR treats
+them as independent across bursts. The paper’s Study 2 asks what that
+reparameterization is worth. The answer is an asymmetry:</p>
 <ul>
 <li><strong>When the Gompertz form holds</strong>, both models are
 correct and the restriction buys efficiency. In the paper, the clearest

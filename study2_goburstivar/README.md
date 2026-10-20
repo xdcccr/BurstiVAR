@@ -1,6 +1,6 @@
 # Study 2: BurstiVAR versus GoBurstiVAR (Gompertz burst trend)
 
-This folder reproduces the Study 2 results of the BurstiVAR paper: the nested
+This folder reproduces the Study 2 results of the BurstiVAR paper: the
 comparison in which data are generated from GoBurstiVAR (a Gompertz function
 of burst number for the burst intercepts, plus bivariate VAR(1) dynamics for
 the within-burst deviations) and every simulated dataset is fit by both

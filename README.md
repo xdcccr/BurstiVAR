@@ -1,6 +1,6 @@
 # BurstiVAR
 
-BurstiVAR is a multilevel vector autoregressive (VAR) model for measurement burst designs, in which participants complete short bursts of intensive longitudinal measurement separated by long gaps. The model estimates within-burst multilevel VAR dynamics (autoregression and cross-regression) while free person- and burst-specific intercepts absorb across-burst trends in a form-free way, so no parametric growth curve has to be assumed between bursts. GoBurstiVAR is a nested parametric variant that replaces the free burst intercepts with a Gompertz growth function, trading robustness for efficiency when the trend form is known. This repository contains the simulation code, the aggregate simulation results, the empirical analysis code, the figure scripts, and two runnable tutorials behind the paper.
+BurstiVAR is a multilevel vector autoregressive (VAR) model for measurement burst designs, in which participants complete short bursts of intensive longitudinal measurement separated by long gaps. The model estimates within-burst multilevel VAR dynamics (autoregression and cross-regression) while free person- and burst-specific intercepts absorb across-burst trends in a form-free way, so no parametric growth curve has to be assumed between bursts. GoBurstiVAR is a parametric variant that replaces the free burst intercepts with a Gompertz growth function, trading robustness for efficiency when the trend form is known. This repository contains the simulation code, the aggregate simulation results, the empirical analysis code, the figure scripts, and two runnable tutorials behind the paper.
 
 ## Citation
 
@@ -11,7 +11,7 @@ Xiong, X., Pesigan, I. J. A., Oravecz, Z., Lanza, S. T., & Chow, S.-M. (under re
 | Folder | Reproduces |
 | --- | --- |
 | `study1_burstivar/` | Study 1 parameter-recovery simulation: manuscript Tables 2 (`tab:study1_trend`) and 3 (`tab:study1_results`) plus the supplemental metrics table, across the Tb = 3 and Tb = 5/20 conditions |
-| `study2_goburstivar/` | Study 2 nested GoBurstiVAR efficiency comparison: Table 4 (`tab:study2_var`), the trend and Gompertz recovery tables (Tables 5 and 6), and their supplement counterparts |
+| `study2_goburstivar/` | Study 2 GoBurstiVAR efficiency comparison: Table 4 (`tab:study2_var`), the trend and Gompertz recovery tables (Tables 5 and 6), and their supplement counterparts |
 | `supplementD_twoburst/` | The two-burst (B = 2) supplemental condition: the B = 2 columns of Table F1 (`tab:supplement_2burst`) and the Supplement D convergence results |
 | `convergence_diagnostics/` | Appendix Table A1 (`tab:convergence_summary`), the ESS/R-hat extraction across studies, and the Supplement D convergence audit |
 | `empirical_gohiar/` | Empirical GoHiAR intervention analysis (code only, see Data availability): Table 7 (`tab:gohiar_sensitivity`), Tables D1/D2 (`tab:gohiar_covfull`, `tab:gohiar_covfull_re`), Table E1 (`tab:gohiar_trend_sens`), and the inputs to Figure 2 |
